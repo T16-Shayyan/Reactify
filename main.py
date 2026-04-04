@@ -84,6 +84,12 @@ def main():
         # our blank screen and mappers and detectors add more here later
         # ========================================================================
 
+
+    #dont forget add more meme here
+    #hereeeeee
+    #hereeeeee
+    #hereeeee
+    #hereeee
     detector = GestureDetector()
     mapper = GestureMapper()
 
