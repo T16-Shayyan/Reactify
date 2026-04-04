@@ -10,6 +10,8 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import os
+from GestureDetector import GestureDetector
+from GestureMapper import GestureMapper
 
 # ============================================================================
 # CONFIGURATION SETTINGS
@@ -19,68 +21,9 @@ import os
 WINDOW_WIDTH = 960
 WINDOW_HEIGHT = 720
 
-# Tongue detection threshold - adjust this value to change sensitivity
-# Higher value = less sensitive (requires wider mouth opening)
-# Lower value = more sensitive (detects smaller mouth openings)
-# Recommended range: 0.02 - 0.05
-TONGUE_OUT_THRESHOLD = 0.03
 
-# ============================================================================
-# MEDIAPIPE INITIALIZATION
-# ============================================================================
 
-# Initialize MediaPipe Face Mesh
-# This creates a face detection model that tracks 468 facial landmarks
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(
-    min_detection_confidence=0.5,  # Confidence threshold for initial detection
-    min_tracking_confidence=0.5,   # Confidence threshold for tracking
-    max_num_faces=1                # We only need to track one face
-)
 
-def is_tongue_out(face_landmarks):
-    """
-    Detect if tongue is out by analyzing mouth landmarks.
-    
-    This function uses MediaPipe Face Mesh landmarks to determine if the
-    mouth is open wide enough to indicate the tongue is sticking out.
-    
-    Key landmarks used:
-    - Landmark #13: Upper lip center
-    - Landmark #14: Lower lip center
-    - Landmark #0: Nose tip (reference point)
-    - Landmark #17: Chin bottom
-    
-    MediaPipe provides 468 total landmarks. See the landmark map:
-    https://github.com/google/mediapipe/blob/master/mediapipe/modules/face_geometry/data/canonical_face_model_uv_visualization.png
-    
-    Args:
-        face_landmarks: MediaPipe face landmarks object containing 468 3D points
-        
-    Returns:
-        bool: True if tongue appears to be out, False otherwise
-    """
-    
-    # Get mouth landmarks (normalized coordinates 0.0 to 1.0)
-    upper_lip = face_landmarks.landmark[13]  # Upper lip center point
-    lower_lip = face_landmarks.landmark[14]  # Lower lip center point
-    
-    # Additional landmarks for reference (not currently used, but available)
-    mouth_top = face_landmarks.landmark[0]     # Nose tip
-    mouth_bottom = face_landmarks.landmark[17] # Chin bottom
-    
-    # Calculate vertical distance between lips
-    # Since coordinates are normalized (0.0-1.0), the result is a percentage
-    # of the total frame height
-    mouth_opening = abs(upper_lip.y - lower_lip.y)
-    
-    # Optional: Print for debugging/calibration
-    # Uncomment the line below to see mouth opening values in real-time
-    # print(f"Mouth opening: {mouth_opening:.4f}")
-    
-    # Compare to threshold and return result
-    # If mouth opening exceeds threshold, tongue is considered "out"
-    return mouth_opening > TONGUE_OUT_THRESHOLD
 
 def main():
     """
@@ -99,8 +42,13 @@ def main():
     # ========================================================================
     
     print("=" * 60)
-    print("Tongue Detection Meme Display")
+    print("Reactify BABYYY")
     print("=" * 60)
+    
+
+        # ========================================================================
+        # CHECK IF OUR MEMES ARE THERE FIRST HERE
+        # ========================================================================
     
     # Check if required image files exist
     if not os.path.exists('apple.png'):
@@ -132,6 +80,21 @@ def main():
     apple_img = cv2.resize(apple_img, (WINDOW_WIDTH, WINDOW_HEIGHT))
     appletongue_img = cv2.resize(appletongue_img, (WINDOW_WIDTH, WINDOW_HEIGHT))
     
+        # ========================================================================
+        # our blank screen and mappers and detectors add more here later
+        # ========================================================================
+
+    detector = GestureDetector()
+    mapper = GestureMapper()
+
+    mapper.add_mapping("tongue_out", "no_hand", appletongue_img)
+    mapper.add_mapping("tongue_out", "unknown", appletongue_img)
+
+    mapper.add_mapping("neutral", "no_hand", apple_img)
+    mapper.add_mapping("neutral", "unknown", apple_img)
+
+    blank_screen = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
+
     # ========================================================================
     # STEP 2: Initialize webcam
     # ========================================================================
@@ -200,39 +163,52 @@ def main():
         # OpenCV uses BGR color order, but MediaPipe expects RGB
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Process the frame with MediaPipe Face Mesh
-        # This detects faces and returns 468 facial landmarks per face
-        results = face_mesh.process(rgb_frame)
+        # chec both face and hand
+        face_results = detector.process_face(rgb_frame)
+        hand_results = detector.process_hands(rgb_frame)
+
+        face_gesture = "neutral"
+        hand_gesture = detector.detect_hand_gesture(hand_results.multi_hand_landmarks)
+
+
         
         # ====================================================================
         # Detect tongue and select appropriate meme
         # ====================================================================
         
-        if results.multi_face_landmarks:
-            # Face detected! Process landmarks
-            for face_landmarks in results.multi_face_landmarks:
-                # Check if tongue is out using our detection function
-                if is_tongue_out(face_landmarks):
-                    # Tongue detected - show tongue meme
-                    current_meme = appletongue_img.copy()
-                    
-                    # Add visual indicator on camera feed (green text)
-                    cv2.putText(frame, "TONGUE OUT!", (10, 50), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
-                else:
-                    # No tongue - show normal meme
-                    current_meme = apple_img.copy()
-                    
-                    # Add status text (yellow text)
-                    cv2.putText(frame, "No tongue detected", (10, 50), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        if face_results.multi_face_landmarks:
+            for face_landmarks in face_results.multi_face_landmarks:
+                face_gesture = detector.detect_face_gesture(face_landmarks)
+                break
+
+        mapped_image = mapper.get_image(face_gesture, hand_gesture)
+
+        if mapped_image is not None:
+            current_meme = mapped_image.copy()
+        elif not face_results.multi_face_landmarks and hand_gesture == "no_hand":
+            current_meme = blank_screen.copy()
         else:
-            # No face detected in frame
             current_meme = apple_img.copy()
-            
-            # Add warning text (red text)
-            cv2.putText(frame, "No face detected", (10, 50), 
-                      cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        if face_results.multi_face_landmarks:
+            if face_gesture == "tongue_out":
+                cv2.putText(frame, "TONGUE OUT!", (10, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+            elif face_gesture == "surprised":
+                cv2.putText(frame, "SURPRISED", (10, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 255), 2)
+            elif face_gesture == "pouting":
+                cv2.putText(frame, "POUTING", (10, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 255), 2)
+            else:
+                cv2.putText(frame, "NEUTRAL", (10, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        else:
+            cv2.putText(frame, "No face detected", (10, 50),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        cv2.putText(frame, "Hand: " + hand_gesture, (10, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         
         # ====================================================================
         # Display windows
@@ -265,7 +241,8 @@ def main():
     cv2.destroyAllWindows()
     
     # Close MediaPipe Face Mesh
-    face_mesh.close()
+    detector.face_mesh.close()
+    detector.hands.close()
     
     print("[OK] Application closed successfully.")
     print("Thanks for using Tongue Detection Meme Display!\n")
