@@ -66,23 +66,29 @@ class GestureDetector:
             hand1 = multi_hand_landmarks[0]
             hand2 = multi_hand_landmarks[1]
         
-            min_distance = 50000
+            close_count = 0
         
-            for t1 in tips:
-                for t2 in tips:
-                    p1 = hand1.landmark[t1]
-                    p2 = hand2.landmark[t2]
-        
-                    dist = ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
-        
-                    if dist < min_distance:
-                        min_distance = dist
-        
-            if min_distance < 0.05:
+            for tip in tips:
+                p1 = hand1.landmark[tip]
+                p2 = hand2.landmark[tip]
+    
+                dist = ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
+    
+                if dist < 0.05:
+                    close_count += 1
+    
+            if close_count >= 2:
                 return "hands_together"
+    
+            return "two_hands"
 
         # single
         hand_landmarks = multi_hand_landmarks[0]
+
+        index_up = hand_landmarks.landmark[8].y < hand_landmarks.landmark[6].y
+        middle_up = hand_landmarks.landmark[12].y < hand_landmarks.landmark[10].y
+        ring_up = hand_landmarks.landmark[16].y < hand_landmarks.landmark[14].y
+        pinky_up = hand_landmarks.landmark[20].y < hand_landmarks.landmark[18].y
 
         
 
@@ -90,23 +96,23 @@ class GestureDetector:
         for tip, pip in zip(tips, pips):
             if hand_landmarks.landmark[tip].y < hand_landmarks.landmark[pip].y:
                 fingers_up += 1
-
+    
         thumb_tip = hand_landmarks.landmark[4]
         thumb_ip = hand_landmarks.landmark[3]
-
-        thumb_up = thumb_tip.x > thumb_ip.x or thumb_tip.y < thumb_ip.y
-
+        thumb_mcp = hand_landmarks.landmark[2]
+    
+        thumb_up = thumb_tip.y < thumb_ip.y < thumb_mcp.y
+    
         if fingers_up == 4 and thumb_up:
             return "open_palm"
-        elif fingers_up == 2:
+        elif index_up and middle_up and not ring_up and not pinky_up:
             return "peace"
         elif fingers_up == 0 and not thumb_up:
             return "fist"
         elif thumb_up and fingers_up == 0:
             return "thumbs_up"
-
+    
         return "unknown"
-
 
     # def get_hand_center(self, hand_landmarks):
     #     x = 0
