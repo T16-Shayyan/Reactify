@@ -108,13 +108,13 @@ class GestureDetector:
         return "unknown"
 
 
-    def get_hand_center(self, hand_landmarks):
-        x = 0
-        y = 0
+    # def get_hand_center(self, hand_landmarks):
+    #     x = 0
+    #     y = 0
 
-        for lm in hand_landmarks.landmark:
-            x += lm.x
-            y += lm.y
+    #     for lm in hand_landmarks.landmark:
+    #         x += lm.x
+    #         y += lm.y
 
-        return (x / len(hand_landmarks.landmark),
-                y / len(hand_landmarks.landmark))
+    #     return (x / len(hand_landmarks.landmark),
+    #             y / len(hand_landmarks.landmark))
