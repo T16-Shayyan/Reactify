@@ -73,7 +73,8 @@ class GestureDetector:
                 p2 = hand2.landmark[tip]
     
                 dist = ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
-    
+
+                #change this to fix this
                 if dist < 0.05:
                     close_count += 1
     
