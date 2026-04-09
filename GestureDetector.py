@@ -59,7 +59,7 @@ class GestureDetector:
         pips = [6, 10, 14, 18]
 
         if not multi_hand_landmarks:
-            return "no_hand"
+            return "unknown"
 
         # two hands
         if len(multi_hand_landmarks) >= 2:
