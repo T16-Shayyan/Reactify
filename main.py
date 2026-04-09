@@ -66,6 +66,9 @@ def main():
     # Load images using OpenCV (images are loaded in BGR format)
     apple_img = cv2.imread('apple.png')
     appletongue_img = cv2.imread('appletongue.png')
+    speed = cv2.imread('IshowSpeed.jpeg')
+    surprised = cv2.imread('surprised.jpeg')
+    peace = cv2.imread('peaceout.jpeg')
     
     # Verify images loaded successfully
     if apple_img is None or appletongue_img is None:
@@ -93,13 +96,19 @@ def main():
     detector = GestureDetector()
     mapper = GestureMapper()
 
-    mapper.add_mapping("tongue_out", "no_hand", appletongue_img)
-    mapper.add_mapping("tongue_out", "unknown", appletongue_img)
-
-    mapper.add_mapping("neutral", "no_hand", apple_img)
-    mapper.add_mapping("neutral", "unknown", apple_img)
+    
 
     blank_screen = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
+
+    
+    mapper.add_mapping("tongue_out", "unknown", appletongue_img)
+
+    mapper.add_mapping("neutral", "unknown", blank_screen)
+    mapper.add_mapping("neutral", "unknown", blank_screen)
+    mapper.add_mapping("neutral", "peace", peace)
+    mapper.add_mapping("pouting", "unknown", speed)
+    mapper.add_mapping("surprised", "unknown", surprised)
+
 
     # ========================================================================
     # STEP 2: Initialize webcam
