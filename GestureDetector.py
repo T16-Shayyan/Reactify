@@ -39,17 +39,19 @@ class GestureDetector:
         mouth_opening = abs(upper_lip.y - lower_lip.y)
         mouth_width = abs(left_corner.x - right_corner.x)
 
+        ratio = mouth_opening / mouth_width
+
         # surprised
         if mouth_opening > 0.05 and mouth_width > 0.06:
             return "surprised"
-
-        # tongue out
-        if mouth_opening > 0.03:
-            return "tongue_out"
-
-        # pouting 
-        if mouth_width < 0.04 and mouth_opening < 0.02:
+    
+        # pouting
+        if mouth_width < 0.05 and ratio < 0.35:
             return "pouting"
+    
+        # tongue out
+        if mouth_opening > 0.03 and ratio > 0.35:
+            return "tongue_out"
 
         return "neutral"
 
