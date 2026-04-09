@@ -55,24 +55,36 @@ class GestureDetector:
 
     def detect_hand_gesture(self, multi_hand_landmarks):
 
+        tips = [8, 12, 16, 20]
+        pips = [6, 10, 14, 18]
+
         if not multi_hand_landmarks:
             return "no_hand"
 
         # two hands
-        if multi_hand_landmarks and len(multi_hand_landmarks) >= 2:
-            center1 = self.get_hand_center(multi_hand_landmarks[0])
-            center2 = self.get_hand_center(multi_hand_landmarks[1])
-
-            distance = abs(center1[0] - center2[0]) + abs(center1[1] - center2[1])
-
-            if distance < 0.15:
+        if len(multi_hand_landmarks) >= 2:
+            hand1 = multi_hand_landmarks[0]
+            hand2 = multi_hand_landmarks[1]
+        
+            min_distance = 50000
+        
+            for t1 in tips:
+                for t2 in tips:
+                    p1 = hand1.landmark[t1]
+                    p2 = hand2.landmark[t2]
+        
+                    dist = ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
+        
+                    if dist < min_distance:
+                        min_distance = dist
+        
+            if min_distance < 0.05:
                 return "hands_together"
 
         # single
         hand_landmarks = multi_hand_landmarks[0]
 
-        tips = [8, 12, 16, 20]
-        pips = [6, 10, 14, 18]
+        
 
         fingers_up = 0
         for tip, pip in zip(tips, pips):
