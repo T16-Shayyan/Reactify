@@ -67,7 +67,7 @@ def main():
     apple_img = cv2.imread('apple.png')
     appletongue_img = cv2.imread('appletongue.png')
     speed = cv2.imread('IshowSpeed.jpeg')
-    surprised = cv2.imread('suprised.jpeg')
+    surprised = cv2.imread('surprised.jpeg')
     peace = cv2.imread('peaceout.jpeg')
     
     # Verify images loaded successfully
