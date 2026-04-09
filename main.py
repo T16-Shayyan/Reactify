@@ -45,23 +45,6 @@ def main():
     print("Reactify BABYYY")
     print("=" * 60)
     
-
-        # ========================================================================
-        # CHECK IF OUR MEMES ARE THERE FIRST HERE
-        # ========================================================================
-    
-    # Check if required image files exist
-    if not os.path.exists('apple.png'):
-        print("\n[ERROR] apple.png not found!")
-        print("Please add this image to the project directory.")
-        print("This image is displayed when tongue is NOT out.")
-        return
-    
-    if not os.path.exists('appletongue.png'):
-        print("\n[ERROR] appletongue.png not found!")
-        print("Please add this image to the project directory.")
-        print("This image is displayed when tongue IS out.")
-        return
     
     # Load images using OpenCV (images are loaded in BGR format)
     apple_img = cv2.imread('apple.png')
@@ -70,13 +53,6 @@ def main():
     surprised = cv2.imread('surprised.jpeg')
     peace = cv2.imread('peaceout.jpeg')
     
-    # Verify images loaded successfully
-    if apple_img is None or appletongue_img is None:
-        print("\n[ERROR] Could not load meme images.")
-        print("Please check that the files are valid PNG images.")
-        return
-    
-    print("[OK] Meme images loaded successfully!")
     
     # Resize images to fit the output window
     # This ensures consistent display regardless of original image size
