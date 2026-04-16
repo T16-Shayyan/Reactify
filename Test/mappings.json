@@ -1,0 +1,42 @@
+[
+  {
+    "face": "neutral",
+    "hand": "no_hand",
+    "image": "apple.png"
+  },
+  {
+    "face": "tongue_out",
+    "hand": "no_hand",
+    "image": "appletongue.png"
+  },
+  {
+    "face": "tongue_out",
+    "hand": "unknown",
+    "image": "appletongue.png"
+  },
+  {
+    "face": "surprised",
+    "hand": "no_hand",
+    "image": "surprised.jpeg"
+  },
+  {
+    "face": "surprised",
+    "hand": "unknown",
+    "image": "surprised.jpeg"
+  },
+  {
+    "face": "pouting",
+    "hand": "no_hand",
+    "image": "IshowSpeed.jpeg"
+  },
+  {
+    "face": "neutral",
+    "hand": "thumbs_up",
+    "image": "IshowSpeed.jpeg"
+  },
+  {
+    "face": "neutral",
+    "hand": "peace",
+    "image": "peaceout.jpeg"
+  }
+]
