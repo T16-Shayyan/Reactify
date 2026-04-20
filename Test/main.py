@@ -5,6 +5,8 @@ from PIL import Image, ImageTk
 import threading
 import os
 import time
+from tkinter import filedialog
+import shutil
 
 from GestureDetector import GestureDetector
 from GestureMapper import GestureMapper
@@ -81,7 +83,7 @@ class App(ctk.CTk):
     # =============================
     # MAIN APP LOAD
     # =============================
-    def start_main_app(self):
+    def start_main_app(self):        
 
         self.gesture_locked = False
         self.startup_frame.destroy()
@@ -102,8 +104,9 @@ class App(ctk.CTk):
         self.running = False
 
         self.last_gesture = ("neutral", "no_hand")
+        self.display_gesture = ("neutral", "no_hand")
         self.gesture_start_time = time.time()
-        self.delay_seconds = 1.5 #delay so no flicekring
+        self.delay_seconds = 0.5 #delay so no flicekring
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -190,18 +193,19 @@ class App(ctk.CTk):
             if current_gesture != self.last_gesture:
                 self.last_gesture = current_gesture
                 self.gesture_start_time = time.time()
-                self.gesture_locked = False   
 
-            elif not self.gesture_locked and time.time() - self.gesture_start_time >= self.delay_seconds:
-                mapped = self.mapper.get_image(face_gesture, hand_gesture)
+            elif time.time() - self.gesture_start_time >= self.delay_seconds:
+                if self.display_gesture != current_gesture:
+                    self.display_gesture = current_gesture
 
-                if mapped is not None:
-                    self.current_meme = mapped.copy()
+                    mapped = self.mapper.get_image(face_gesture, hand_gesture)
+                    if mapped is not None:
+                        self.current_meme = mapped.copy()
 
-                self.gesture_locked = True
+            display_face, display_hand = self.display_gesture
 
-            self.face_label.configure(text=f"Face: {face_gesture}")
-            self.hand_label.configure(text=f"Hand: {hand_gesture}")
+            self.face_label.configure(text=f"Face: {display_face}")
+            self.hand_label.configure(text=f"Hand: {display_hand}")
 
             cam_img = Image.fromarray(rgb)
             meme_img = Image.fromarray(cv2.cvtColor(self.current_meme, cv2.COLOR_BGR2RGB))
