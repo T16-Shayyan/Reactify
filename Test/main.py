@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image, ImageTk
 import threading
 import os
+import time
 
 from GestureDetector import GestureDetector
 from GestureMapper import GestureMapper
@@ -81,6 +82,8 @@ class App(ctk.CTk):
     # MAIN APP LOAD
     # =============================
     def start_main_app(self):
+
+        self.gesture_locked = False
         self.startup_frame.destroy()
         self.configure(fg_color="#0a0a0f")
 
@@ -97,6 +100,10 @@ class App(ctk.CTk):
         self.cap = cv2.VideoCapture(0)
         self.current_meme = self.get_default_meme()
         self.running = False
+
+        self.last_gesture = ("neutral", "no_hand")
+        self.gesture_start_time = time.time()
+        self.delay_seconds = 1.5 #delay so no flicekring
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -178,10 +185,20 @@ class App(ctk.CTk):
             if face and face.multi_face_landmarks:
                 face_gesture = self.detector.detect_face_gesture(face.multi_face_landmarks[0])
 
-            mapped = self.mapper.get_image(face_gesture, hand_gesture)
+            current_gesture = (face_gesture, hand_gesture)
 
-            if mapped is not None:
-                self.current_meme = mapped.copy()
+            if current_gesture != self.last_gesture:
+                self.last_gesture = current_gesture
+                self.gesture_start_time = time.time()
+                self.gesture_locked = False   
+
+            elif not self.gesture_locked and time.time() - self.gesture_start_time >= self.delay_seconds:
+                mapped = self.mapper.get_image(face_gesture, hand_gesture)
+
+                if mapped is not None:
+                    self.current_meme = mapped.copy()
+
+                self.gesture_locked = True
 
             self.face_label.configure(text=f"Face: {face_gesture}")
             self.hand_label.configure(text=f"Hand: {hand_gesture}")
