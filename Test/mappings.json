@@ -63,5 +63,15 @@
     "face": "neutral",
     "hand": "two_hands",
     "image": "2hands.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "middle_finger",
+    "image": "finger.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "spiderman",
+    "image": "spiderman.png"
   }
 ]

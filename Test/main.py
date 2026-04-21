@@ -106,7 +106,7 @@ class App(ctk.CTk):
         self.last_gesture = ("neutral", "no_hand")
         self.display_gesture = ("neutral", "no_hand")
         self.gesture_start_time = time.time()
-        self.delay_seconds = 0.5 #delay so no flicekring
+        self.delay_seconds = 0.3 #delay so no flicekring
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -244,7 +244,7 @@ class App(ctk.CTk):
         ctk.CTkLabel(upload_window, text="Hand Gesture").pack(pady=(15, 5))
         hand_menu = ctk.CTkOptionMenu(
             upload_window,
-            values=["no_hand", "unknown", "peace", "thumbs_up", "fist", "open_palm", "two_hands", "hands_together"]
+            values=["no_hand", "unknown", "peace", "thumbs_up", "fist", "open_palm", "two_hands", "hands_together", "spiderman", "middle_finger"]
         )
         hand_menu.set("no_hand")
         hand_menu.pack(pady=5)

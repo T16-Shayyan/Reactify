@@ -105,6 +105,10 @@ class GestureDetector:
             return "open_palm"
         elif index_up and middle_up and not ring_up and not pinky_up:
             return "peace"
+        elif middle_up and not index_up and not ring_up and not pinky_up:
+            return "middle_finger"
+        elif thumb_up and index_up and pinky_up and not middle_up and not ring_up:
+            return "spiderman"
         elif fingers_up == 0 and not thumb_up:
             return "fist"
         elif thumb_up and fingers_up == 0:
