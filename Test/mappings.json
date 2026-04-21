@@ -38,5 +38,10 @@
     "face": "neutral",
     "hand": "peace",
     "image": "peaceout.jpeg"
+  },
+  {
+    "face": "surprised",
+    "hand": "thumbs_up",
+    "image": "ChatGPT Image Mar 7, 2026, 11_41_34 PM.png"
   }
 ]

@@ -134,7 +134,7 @@ class App(ctk.CTk):
             self.button_frame,
             text="Upload Image",
             fg_color="#2563eb",
-            command=lambda: print("Upload clicked")
+            command=self.open_upload_window
         )
         self.upload_btn.pack(side="left", padx=15)
 
@@ -218,6 +218,111 @@ class App(ctk.CTk):
 
             self.meme_label.configure(image=meme_tk)
             self.meme_label.image = meme_tk
+    
+
+    def open_upload_window(self):
+
+
+        upload_window = ctk.CTkToplevel(self)
+        upload_window.title("Upload Image")
+        upload_window.geometry("420x360")
+        upload_window.grab_set()
+
+
+
+        ctk.CTkLabel(upload_window, text="Face Gesture").pack(pady=(15, 5))
+        face_menu = ctk.CTkOptionMenu(
+            upload_window,
+            values=["neutral", "tongue_out", "surprised", "pouting"]
+        )
+        face_menu.set("neutral")
+        face_menu.pack(pady=5)
+
+
+
+
+        ctk.CTkLabel(upload_window, text="Hand Gesture").pack(pady=(15, 5))
+        hand_menu = ctk.CTkOptionMenu(
+            upload_window,
+            values=["no_hand", "unknown", "peace", "thumbs_up", "fist", "open_palm", "two_hands", "hands_together"]
+        )
+        hand_menu.set("no_hand")
+        hand_menu.pack(pady=5)
+
+
+
+
+        file_label = ctk.CTkLabel(upload_window, text="No file selected")
+        file_label.pack(pady=(15, 5))
+
+        selected_file = {"path": None}
+
+
+
+        def choose_file():
+            file_path = filedialog.askopenfilename(
+                title="Choose an image",
+                filetypes=[("Image Files", "*.png *.jpg *.jpeg")]
+            )
+
+
+            if file_path:
+                selected_file["path"] = file_path
+                file_label.configure(text=os.path.basename(file_path))
+
+
+
+        def save_upload():
+            if not selected_file["path"]:
+                file_label.configure(text="Please choose a file first")
+                return
+
+
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            image_dir = os.path.join(base_dir, "images")
+            mapping_path = os.path.join(base_dir, "mappings.json")
+
+            os.makedirs(image_dir, exist_ok=True)
+
+
+
+
+            filename = os.path.basename(selected_file["path"])
+            destination = os.path.join(image_dir, filename)
+
+
+            if not os.path.exists(destination):
+                shutil.copy(selected_file["path"], destination)
+
+
+            self.mapper.load_images()
+            self.mapper.add_mapping(face_menu.get(), hand_menu.get(), filename)
+            self.mapper.save_mappings(mapping_path)
+
+
+            file_label.configure(text=f"Saved: {filename}")
+            upload_window.after(800, upload_window.destroy)
+
+
+        ctk.CTkButton(
+
+            upload_window,
+            text="Choose File",
+            fg_color="#2563eb",
+            command=choose_file
+
+        ).pack(pady=10)
+
+
+
+        ctk.CTkButton(
+
+            upload_window,
+            text="Upload and Save",
+            fg_color="green",
+            command=save_upload
+        ).pack(pady=10)
+
 
     def quit_app(self):
         self.running = False
