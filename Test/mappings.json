@@ -32,7 +32,7 @@
   {
     "face": "neutral",
     "hand": "thumbs_up",
-    "image": "IshowSpeed.jpeg"
+    "image": "thumbsup.png"
   },
   {
     "face": "neutral",
@@ -43,5 +43,25 @@
     "face": "surprised",
     "hand": "thumbs_up",
     "image": "ChatGPT Image Mar 7, 2026, 11_41_34 PM.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "open_palm",
+    "image": "palm.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "hands_together",
+    "image": "handstogther.jpg"
+  },
+  {
+    "face": "neutral",
+    "hand": "fist",
+    "image": "fist.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "two_hands",
+    "image": "2hands.png"
   }
 ]

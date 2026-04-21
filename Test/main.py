@@ -11,8 +11,8 @@ import shutil
 from GestureDetector import GestureDetector
 from GestureMapper import GestureMapper
 
-WINDOW_WIDTH = 640
-WINDOW_HEIGHT = 480
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
