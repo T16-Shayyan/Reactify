@@ -39,6 +39,11 @@ class GestureDetector:
         mouth_opening = abs(upper_lip.y - lower_lip.y)
         mouth_width = abs(left_corner.x - right_corner.x)
 
+        if mouth_width > 0:
+            mouth_ratio = mouth_opening / mouth_width
+        else:
+            mouth_ratio = 0
+
         # surprised
         if mouth_opening > 0.05 and mouth_width > 0.06:
             return "surprised"
@@ -48,7 +53,7 @@ class GestureDetector:
             return "tongue_out"
 
         # pouting 
-        if mouth_width < 0.04 and mouth_opening < 0.02:
+        if mouth_width < 0.045 and mouth_ratio < 0.35:
             return "pouting"
 
         return "neutral"
@@ -61,27 +66,19 @@ class GestureDetector:
         if not multi_hand_landmarks:
             return "unknown"
 
-        # two hands
         if len(multi_hand_landmarks) >= 2:
             hand1 = multi_hand_landmarks[0]
             hand2 = multi_hand_landmarks[1]
-        
-            close_count = 0
-        
-            for tip in tips:
-                p1 = hand1.landmark[tip]
-                p2 = hand2.landmark[tip]
-    
-                dist = ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
 
-                #change this to fix this
-                if dist < 0.05:
-                    close_count += 1
-    
-            if close_count >= 2:
+            c1x, c1y = self.get_palm_center(hand1)
+            c2x, c2y = self.get_palm_center(hand2)
+
+            dist = ((c1x - c2x) ** 2 + (c1y - c2y) ** 2) ** 0.5
+
+            if dist < 0.2:
                 return "hands_together"
-    
-            return "two_hands"
+            else:
+                return "two_hands"
 
         # single
         hand_landmarks = multi_hand_landmarks[0]
@@ -108,6 +105,10 @@ class GestureDetector:
             return "open_palm"
         elif index_up and middle_up and not ring_up and not pinky_up:
             return "peace"
+        elif middle_up and not index_up and not ring_up and not pinky_up:
+            return "middle_finger"
+        elif thumb_up and index_up and pinky_up and not middle_up and not ring_up:
+            return "spiderman"
         elif fingers_up == 0 and not thumb_up:
             return "fist"
         elif thumb_up and fingers_up == 0:
@@ -115,13 +116,14 @@ class GestureDetector:
     
         return "unknown"
 
-    # def get_hand_center(self, hand_landmarks):
-    #     x = 0
-    #     y = 0
+    def get_palm_center(self, hand_landmarks):
+        palm_points = [0, 5, 9, 13, 17]
 
-    #     for lm in hand_landmarks.landmark:
-    #         x += lm.x
-    #         y += lm.y
+        x = 0
+        y = 0
 
-    #     return (x / len(hand_landmarks.landmark),
-    #             y / len(hand_landmarks.landmark))
+        for idx in palm_points:
+            x += hand_landmarks.landmark[idx].x
+            y += hand_landmarks.landmark[idx].y
+
+        return (x / len(palm_points), y / len(palm_points))

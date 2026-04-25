@@ -1,258 +1,335 @@
-"""
-Tongue Detection Meme Display
-A MediaPipe + OpenCV application that detects when your tongue is out
-and displays different meme images accordingly.
-
-See TUTORIAL.md for detailed explanations
-"""
-
+import customtkinter as ctk
 import cv2
 import numpy as np
+from PIL import Image, ImageTk
+import threading
 import os
+import time
+from tkinter import filedialog
+import shutil
+
 from GestureDetector import GestureDetector
 from GestureMapper import GestureMapper
 
-# ============================================================================
-# CONFIGURATION SETTINGS
-# ============================================================================
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
 
-# Window settings - approximately half monitor size (1920x1080 / 2)
-WINDOW_WIDTH = 960
-WINDOW_HEIGHT = 720
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
 
-#UI functions
-def get_available_images(mapper):
-    mapper.load_images()
-    return mapper.list_images()
+class App(ctk.CTk):
+    def __init__(self):
+        super().__init__()
 
-def save_user_mapping(mapper, json_path, face, hand, image_name):
-    mapper.load_images()
-    mapper.load_mappings(json_path)
-    mapper.app_mapping(face, hand, image_name)
-    mapper.save_mappings(json_path)
+        self.title("Reactify")
+        self.geometry("1400x900")
+        self.configure(fg_color="black")
 
-def add_image(source_path, image_folder, mapper=None):
-    if not os.path.exists(source_path):
-        raise FileNotFoundError(f"Image not found: {source_path}")
+        # Make window start invisible
+        self.attributes("-alpha", 0.0)
 
-    if not os.path.exists(image_folder):
-        os.makedirs(image_folder)
+        # ===== STARTUP FRAME =====
+        self.startup_frame = ctk.CTkFrame(self, fg_color="black")
+        self.startup_frame.pack(fill="both", expand=True)
 
-    filename = os.path.basename(source_path)
-    destination = os.path.join(image_folder, filename)
+        self.title_label = ctk.CTkLabel(
+            self.startup_frame,
+            text="Reactify",
+            font=("Arial", 80, "bold"),
+            text_color="#8b5cf6"
+        )
+        self.title_label.place(relx=0.5, rely=0.5, anchor="center")
 
-    shutil.copy2(source_path, destination)
+        self.fade_in()
 
-    if mapper is not None:
-        mapper.load_images()
+    # =============================
+    # SMOOTH FADE IN
+    # =============================
+    def fade_in(self):
+        alpha = self.attributes("-alpha")
 
-    return filename
-
-
-
-def main():
-    """
-    Main application loop.
-    
-    This function:
-    1. Loads the meme images
-    2. Initializes the webcam
-    3. Creates display windows
-    4. Runs the main detection loop
-    5. Handles cleanup on exit
-    """
-    
-    # ========================================================================
-    # STEP 1: Load and prepare meme images
-    # ========================================================================
-    
-    print("=" * 60)
-    print("Reactify BABYYY")
-    print("=" * 60)
-    
-    detector = GestureDetector()
-    IMAGE_FOLDER = "images"
-    MAPPINGS_FILE = "mappings.json"
-    mapper = GestureMapper(IMAGE_FOLDER, WINDOW_WIDTH, WINDOW_HEIGHT)
-    mapper.load_mappings(MAPPINGS_FILE)
-
-    if not mapper.list_images():
-        print("\nNo images found in the images folder.")
-        return
-	
-    blank_screen = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
-
-    if not mapper.mapping:
-        mapper.add_mapping("neutral", "no_hand", "apple.png")
-        mapper.add_mapping("tongue_out", "no_hand", "appletongue.png")
-        mapper.add_mapping("tongue_out", "unknown", "appletongue.png")
-        mapper.add_mapping("surprised", "no_hand", "surprised.jpeg")
-        mapper.add_mapping("surprised", "unknown", "surprised.jpeg")
-        mapper.add_mapping("pouting", "no_hand", "IshowSpeed.jpeg")
-        mapper.add_mapping("pouting", "unknown", "IshowSpeed.jpeg")
-        mapper.add_mapping("neutral", "peace", "peaceout.jpeg")
-        mapper.save_mappings(MAPPINGS_FILE)
-
-    default_image = mapper.get_image("neutral", "no_hand")
-    current_meme = default_image.copy() if default_image is not None else blank_screen.copy()
-     
-
-    # ========================================================================
-    # STEP 2: Initialize webcam
-    # ========================================================================
-    
-    # Open the default webcam (index 0)
-    # If you have multiple cameras, try changing 0 to 1, 2, etc.
-
-    cap = cv2.VideoCapture(0)
-    
-    if not cap.isOpened():
-        print("\n[ERROR] Could not open webcam.")
-        print("Please check:")
-        print("  - Webcam is connected")
-        print("  - No other application is using the webcam")
-        print("  - Webcam permissions are enabled")
-        return
-    
-    # Set webcam resolution (may not match exactly depending on hardware)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, WINDOW_WIDTH)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, WINDOW_HEIGHT)
-    
-    print("[OK] Webcam initialized successfully!")
-    
-    # ========================================================================
-    # STEP 3: Create display windows
-    # ========================================================================
-    
-    # Create two windows: one for camera input, one for meme output
-    cv2.namedWindow('Camera Input', cv2.WINDOW_NORMAL)
-    cv2.namedWindow('Meme Output', cv2.WINDOW_NORMAL)
-    
-    # Set window sizes
-    cv2.resizeWindow('Camera Input', WINDOW_WIDTH, WINDOW_HEIGHT)
-    cv2.resizeWindow('Meme Output', WINDOW_WIDTH, WINDOW_HEIGHT)
-    
-    print("\n" + "=" * 60)
-    print("[OK] Application started successfully!")
-    print("=" * 60)
-    print("\n[CAMERA] Windows opened")
-    print("[TONGUE] Stick your tongue out to change the meme!")
-    print("[QUIT] Press 'q' to quit\n")
-        
-    # ========================================================================
-    # STEP 4: Main detection loop
-    # ========================================================================
-    
-    while True:
-        # Read a frame from the webcam
-        ret, frame = cap.read()
-        
-        # Check if frame was captured successfully
-        if not ret:
-            print("\n[ERROR] Could not read frame from webcam.")
-            break
-        
-        # Flip frame horizontally for mirror effect (makes it easier to use)
-        # Without this, moving left would make the image move right
-        frame = cv2.flip(frame, 1)
-        
-        # Ensure frame matches our target window size
-        frame = cv2.resize(frame, (WINDOW_WIDTH, WINDOW_HEIGHT))
-        
-        # Convert BGR (OpenCV format) to RGB (MediaPipe format)
-        # OpenCV uses BGR color order, but MediaPipe expects RGB
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # chec both face and hand
-        face_results = detector.process_face(rgb_frame)
-        hand_results = detector.process_hands(rgb_frame)
-
-        face_gesture = "neutral"
-        hand_gesture = "no_hand"
-
-
-        
-        # ====================================================================
-        # Detect and select appropriate meme
-        # ====================================================================
-        
-        if hand_results and hand_results.multi_hand_landmarks:
-            hand_gesture = detector.detect_hand_gesture(hand_results.multi_hand_landmarks)
-
-
-        if face_results.multi_face_landmarks:
-            for face_landmarks in face_results.multi_face_landmarks:
-                face_gesture = detector.detect_face_gesture(face_landmarks)
-                break
-
-        mapped_image = mapper.get_image(face_gesture, hand_gesture)
-
-        if mapped_image is not None:
-            current_meme = mapped_image.copy()
-        elif (not face_results or not face_results.multi_face_landmarks) and hand_gesture == "no_hand":
-            current_meme = blank_screen.copy()
+        if alpha < 1.0:
+            alpha += 0.05
+            self.attributes("-alpha", alpha)
+            self.after(15, self.fade_in)
         else:
-            default_image = mapper.get_image("neutral", "no_hand")
-            current_meme = default_image.copy() if default_image is not None else blank_screen.copy()
+            self.after(400, self.fade_out_title)
 
-        if face_results and face_results.multi_face_landmarks:
-            if face_gesture == "tongue_out":
-                cv2.putText(frame, "TONGUE OUT!", (10, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
-            elif face_gesture == "surprised":
-                cv2.putText(frame, "SURPRISED", (10, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 255), 2)
-            elif face_gesture == "pouting":
-                cv2.putText(frame, "POUTING", (10, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 255), 2)
+    # =============================
+    # TITLE FADE OUT
+    # =============================
+    def fade_out_title(self):
+        current_color = self.title_label.cget("text_color")
+
+        # Gradually darken text
+        fade_steps = 20
+        duration = 15
+
+        def step(i):
+            if i <= fade_steps:
+                fade_ratio = 1 - (i / fade_steps)
+                r = int(139 * fade_ratio)
+                g = int(92 * fade_ratio)
+                b = int(246 * fade_ratio)
+                color = f"#{r:02x}{g:02x}{b:02x}"
+                self.title_label.configure(text_color=color)
+                self.after(duration, lambda: step(i + 1))
             else:
-                cv2.putText(frame, "NEUTRAL", (10, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-        else:
-            cv2.putText(frame, "No face detected", (10, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                self.start_main_app()
 
-        cv2.putText(frame, "Hand: " + hand_gesture, (10, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        
-        # ====================================================================
-        # Display windows
-        # ====================================================================
-        
-        # Show camera feed with detection status
-        cv2.imshow('Camera Input', frame)
-        
-        # Show current meme image
-        cv2.imshow('Meme Output', current_meme)
-        
-        # ====================================================================
-        # Handle keyboard input
-        # ====================================================================
-        
-        # Wait 1ms for key press, check if 'q' was pressed
-        # The & 0xFF is needed for compatibility with some systems
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            print("\n[QUIT] Quitting application...")
-            break
+        step(0)
+
+    # =============================
+    # MAIN APP LOAD
+    # =============================
+    def start_main_app(self):        
+
+        self.gesture_locked = False
+        self.startup_frame.destroy()
+        self.configure(fg_color="#0a0a0f")
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        image_dir = os.path.join(base_dir, "images")
+        mapping_path = os.path.join(base_dir, "mappings.json")
+
+        self.detector = GestureDetector()
+        self.mapper = GestureMapper(image_dir, WINDOW_WIDTH, WINDOW_HEIGHT)
+
+        self.mapper.load_images()
+        self.mapper.load_mappings(mapping_path)
+
+        self.cap = cv2.VideoCapture(0)
+        self.current_meme = self.get_default_meme()
+        self.running = False
+
+        self.last_gesture = ("neutral", "no_hand")
+        self.display_gesture = ("neutral", "no_hand")
+        self.gesture_start_time = time.time()
+        self.delay_seconds = 0.3 #delay so no flicekring
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.camera_label = ctk.CTkLabel(self, text="", fg_color="#0a0a0f")
+        self.camera_label.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+
+        self.meme_label = ctk.CTkLabel(self, text="", fg_color="#0a0a0f")
+        self.meme_label.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
+
+        self.status_frame = ctk.CTkFrame(self, fg_color="#0a0a0f")
+        self.status_frame.grid(row=1, column=0, columnspan=2, pady=10)
+
+        self.face_label = ctk.CTkLabel(self.status_frame, text="Face: -", font=("Arial", 16))
+        self.face_label.pack(side="left", padx=15)
+
+        self.hand_label = ctk.CTkLabel(self.status_frame, text="Hand: -", font=("Arial", 16))
+        self.hand_label.pack(side="left", padx=15)
+
+        self.button_frame = ctk.CTkFrame(self, fg_color="#0a0a0f")
+        self.button_frame.grid(row=2, column=0, columnspan=2, pady=10)
+
+        self.upload_btn = ctk.CTkButton(
+            self.button_frame,
+            text="Upload Image",
+            fg_color="#2563eb",
+            command=self.open_upload_window
+        )
+        self.upload_btn.pack(side="left", padx=15)
+
+        self.quit_btn = ctk.CTkButton(
+            self.button_frame,
+            text="Quit",
+            fg_color="red",
+            command=self.quit_app
+        )
+        self.quit_btn.pack(side="left", padx=15)
+
+        self.after(200, self.start_camera)
+
+    # =============================
+    def get_default_meme(self):
+        default = self.mapper.get_image("neutral", "no_hand")
+
+        if default is not None:
+            return default.copy()
+
+        if self.mapper.images:
+            return list(self.mapper.images.values())[0].copy()
+
+        return np.full((WINDOW_HEIGHT, WINDOW_WIDTH, 3), 40, dtype=np.uint8)
+
+    # =============================
+    def start_camera(self):
+        if not self.running:
+            self.running = True
+            threading.Thread(target=self.update_loop, daemon=True).start()
+
+    def update_loop(self):
+        while self.running:
+            ret, frame = self.cap.read()
+            if not ret:
+                continue
+
+            frame = cv2.flip(frame, 1)
+            frame = cv2.resize(frame, (WINDOW_WIDTH, WINDOW_HEIGHT))
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            face = self.detector.process_face(rgb)
+            hand = self.detector.process_hands(rgb)
+
+            face_gesture = "neutral"
+            hand_gesture = "no_hand"
+
+            if hand and hand.multi_hand_landmarks:
+                hand_gesture = self.detector.detect_hand_gesture(hand.multi_hand_landmarks)
+
+            if face and face.multi_face_landmarks:
+                face_gesture = self.detector.detect_face_gesture(face.multi_face_landmarks[0])
+
+            current_gesture = (face_gesture, hand_gesture)
+
+            if current_gesture != self.last_gesture:
+                self.last_gesture = current_gesture
+                self.gesture_start_time = time.time()
+
+            elif time.time() - self.gesture_start_time >= self.delay_seconds:
+                if self.display_gesture != current_gesture:
+                    self.display_gesture = current_gesture
+
+                    mapped = self.mapper.get_image(face_gesture, hand_gesture)
+                    if mapped is not None:
+                        self.current_meme = mapped.copy()
+
+            display_face, display_hand = self.display_gesture
+
+            self.face_label.configure(text=f"Face: {display_face}")
+            self.hand_label.configure(text=f"Hand: {display_hand}")
+
+            cam_img = Image.fromarray(rgb)
+            meme_img = Image.fromarray(cv2.cvtColor(self.current_meme, cv2.COLOR_BGR2RGB))
+
+            cam_tk = ImageTk.PhotoImage(cam_img)
+            meme_tk = ImageTk.PhotoImage(meme_img)
+
+            self.camera_label.configure(image=cam_tk)
+            self.camera_label.image = cam_tk
+
+            self.meme_label.configure(image=meme_tk)
+            self.meme_label.image = meme_tk
     
-    # ========================================================================
-    # STEP 5: Cleanup and exit
-    # ========================================================================
-    
-    # Release webcam
-    cap.release()
-    
-    # Close all OpenCV windows
-    cv2.destroyAllWindows()
-    
-    # Close MediaPipe Face Mesh
-    detector.face_mesh.close()
-    detector.hands.close()
-    
-    print("[OK] Application closed successfully.")
-    print("Thanks for using Tongue Detection Meme Display!\n")
+
+    def open_upload_window(self):
+
+
+        upload_window = ctk.CTkToplevel(self)
+        upload_window.title("Upload Image")
+        upload_window.geometry("420x360")
+        upload_window.grab_set()
+
+
+
+        ctk.CTkLabel(upload_window, text="Face Gesture").pack(pady=(15, 5))
+        face_menu = ctk.CTkOptionMenu(
+            upload_window,
+            values=["neutral", "tongue_out", "surprised", "pouting"]
+        )
+        face_menu.set("neutral")
+        face_menu.pack(pady=5)
+
+
+
+
+        ctk.CTkLabel(upload_window, text="Hand Gesture").pack(pady=(15, 5))
+        hand_menu = ctk.CTkOptionMenu(
+            upload_window,
+            values=["no_hand", "unknown", "peace", "thumbs_up", "fist", "open_palm", "two_hands", "hands_together", "spiderman", "middle_finger"]
+        )
+        hand_menu.set("no_hand")
+        hand_menu.pack(pady=5)
+
+
+
+
+        file_label = ctk.CTkLabel(upload_window, text="No file selected")
+        file_label.pack(pady=(15, 5))
+
+        selected_file = {"path": None}
+
+
+
+        def choose_file():
+            file_path = filedialog.askopenfilename(
+                title="Choose an image",
+                filetypes=[("Image Files", "*.png *.jpg *.jpeg")]
+            )
+
+
+            if file_path:
+                selected_file["path"] = file_path
+                file_label.configure(text=os.path.basename(file_path))
+
+
+
+        def save_upload():
+            if not selected_file["path"]:
+                file_label.configure(text="Please choose a file first")
+                return
+
+
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            image_dir = os.path.join(base_dir, "images")
+            mapping_path = os.path.join(base_dir, "mappings.json")
+
+            os.makedirs(image_dir, exist_ok=True)
+
+
+
+
+            filename = os.path.basename(selected_file["path"])
+            destination = os.path.join(image_dir, filename)
+
+
+            if not os.path.exists(destination):
+                shutil.copy(selected_file["path"], destination)
+
+
+            self.mapper.load_images()
+            self.mapper.add_mapping(face_menu.get(), hand_menu.get(), filename)
+            self.mapper.save_mappings(mapping_path)
+
+
+            file_label.configure(text=f"Saved: {filename}")
+            upload_window.after(800, upload_window.destroy)
+
+
+        ctk.CTkButton(
+
+            upload_window,
+            text="Choose File",
+            fg_color="#2563eb",
+            command=choose_file
+
+        ).pack(pady=10)
+
+
+
+        ctk.CTkButton(
+
+            upload_window,
+            text="Upload and Save",
+            fg_color="green",
+            command=save_upload
+        ).pack(pady=10)
+
+
+    def quit_app(self):
+        self.running = False
+        self.cap.release()
+        self.destroy()
+
 
 if __name__ == "__main__":
-    main()
-
+    app = App()
+    app.mainloop()

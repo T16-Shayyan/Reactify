@@ -32,11 +32,41 @@
   {
     "face": "neutral",
     "hand": "thumbs_up",
-    "image": "IshowSpeed.jpeg"
+    "image": "thumbsup.png"
   },
   {
     "face": "neutral",
     "hand": "peace",
     "image": "peaceout.jpeg"
+  },
+  {
+    "face": "neutral",
+    "hand": "open_palm",
+    "image": "palm.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "hands_together",
+    "image": "handstogther.jpg"
+  },
+  {
+    "face": "neutral",
+    "hand": "fist",
+    "image": "fist.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "two_hands",
+    "image": "2hands.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "middle_finger",
+    "image": "finger.png"
+  },
+  {
+    "face": "neutral",
+    "hand": "spiderman",
+    "image": "spiderman.png"
   }
 ]
